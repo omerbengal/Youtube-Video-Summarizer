@@ -8,6 +8,8 @@ from moviepy.editor import VideoFileClip
 import os
 import time
 
+import easyocr
+
 
 def search_for_videos(subject):
 
@@ -38,16 +40,16 @@ def create_folder_based_on_current_time(subject):
     current_time = time.strftime("%Y%m%d-%H%M%S")
     folder_name = f"video summary - {current_time} - {subject}"  # nopep8
     os.mkdir(folder_name)
-    print("Summary folder created successfully!")
+    print("Summary folder: ", folder_name, "created successfully!")
     return folder_name
 
 
-def download_video(video, save_path):
+def download_video(video, folder_path):
     print("Top video: " + video.title)
     print("URL: " + video.watch_url)
     print("Downloading top video...")
     yt = YouTube(video.watch_url)
-    video_path = yt.streams.get_highest_resolution().download(save_path)
+    video_path = yt.streams.get_highest_resolution().download(folder_path)
     print("Top video downloaded successfully!")
     return video_path
 
@@ -67,7 +69,20 @@ def parse_time(time_str):
     return total_seconds
 
 
-def download_scene_frames(video_path, save_path, scene_list, min_scene_length=1, images_num_from_scene=2):
+def detect_text_with_easyocr(folder_path):
+    print("Detecting text with easyocr in folder: ", folder_path)
+    reader = easyocr.Reader(['en'])
+    text_list = []
+    for file in os.listdir(folder_path):
+        if file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg"):
+            file_path = os.path.join(folder_path, file)
+            result = reader.readtext(file_path)
+            if len(result) > 0:
+                text_list.append(result)
+    print(text_list)
+
+
+def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1, images_num_from_scene=2):
     print("Downloading key scene frames...")
 
     video = VideoFileClip(video_path)
@@ -84,8 +99,7 @@ def download_scene_frames(video_path, save_path, scene_list, min_scene_length=1,
         for j in range(images_num_from_scene):
             time = start_time + (scene_length / (images_num_from_scene + 1)) * (j + 1)  # nopep8
             frame = video.get_frame(time)
-            # imageio.imwrite(f"scene_{i + 1}_frame_{j + 1}.jpg", frame)
-            imageio.imwrite(f"{save_path}/scene_{i + 1}_frame_{j + 1}.jpg", frame)  # nopep8
+            imageio.imwrite(f"{folder_path}/scene_{i + 1}_frame_{j + 1}.jpg", frame)  # nopep8
 
     print("Key scene frames downloaded successfully!")
 
@@ -95,13 +109,15 @@ def main():
     final_videos = search_for_videos(subject)
     top_video = final_videos[0]  # Top video
     print("---------------------------------")
-    save_path = create_folder_based_on_current_time(subject)
+    folder_path = create_folder_based_on_current_time(subject)
     print("---------------------------------")
-    video_path = download_video(top_video, save_path)
+    video_path = download_video(top_video, folder_path)
     print("---------------------------------")
     scene_list = scene_detection(video_path)
     print("---------------------------------")
-    download_scene_frames(video_path, save_path, scene_list)
+    download_scene_frames(video_path, folder_path, scene_list)
+    print("---------------------------------")
+    detect_text_with_easyocr(folder_path)
 
 
 if __name__ == "__main__":
