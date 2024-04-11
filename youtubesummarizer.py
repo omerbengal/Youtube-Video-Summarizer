@@ -10,10 +10,12 @@ import time
 
 import easyocr
 
+from PIL import Image, ImageDraw, ImageFont
+
 
 def search_for_videos(subject):
 
-    print("Featching videos about", subject, " from youtube...")
+    print("Featching videos about ", subject, " from youtube...")
     search = Search(subject)
 
     final_videos = [
@@ -57,6 +59,11 @@ def download_video(video, folder_path):
 def scene_detection(video_path):
     print("Detecting scenes...")
     scene_list = detect(video_path, ContentDetector())
+    if scene_list is None:
+        # No scenes detected - which means the entire video is one scene. Take it.
+        scene_list = [("00:00:00.000 [frame=0, fps=30.000]", "01:00:00.000 [frame=500, fps=30.000]")]  # nopep8
+    else:
+        print("Scenes detected: ", scene_list)
     print("Scenes detected successfully!")
     return scene_list
 
@@ -67,19 +74,6 @@ def parse_time(time_str):
     hours, minutes, seconds = time_parts
     total_seconds = int(hours) * 3600 + int(minutes) * 60 + float(seconds)
     return total_seconds
-
-
-def detect_text_with_easyocr(folder_path):
-    print("Detecting text with easyocr in folder: ", folder_path)
-    reader = easyocr.Reader(['en'])
-    text_list = []
-    for file in os.listdir(folder_path):
-        if file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg"):
-            file_path = os.path.join(folder_path, file)
-            result = reader.readtext(file_path)
-            if len(result) > 0:
-                text_list.append(result)
-    print(text_list)
 
 
 def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1, images_num_from_scene=2):
@@ -104,6 +98,64 @@ def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=
     print("Key scene frames downloaded successfully!")
 
 
+def detect_text_with_easyocr(folder_path):
+    print("Detecting text with easyocr in:", folder_path)
+    reader = easyocr.Reader(['en'])
+    text_list = []
+    for file in os.listdir(folder_path):
+        if file.lower().endswith(('.jpg', '.png', 'jpeg')):
+            file_path = os.path.join(folder_path, file)
+            result = reader.readtext(file_path)
+            if len(result) > 0:
+                for detection in result:
+                    text = detection[1]
+                    text_list.append(text)
+    print(text_list)
+
+
+def add_watermark_to_images(folder_path, watermark_text="Omer Bengal"):
+
+    print("Adding watermark to images in: ", folder_path)
+
+    # Loop through all files in the input folder
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith(('.jpg', '.png', 'jpeg')):
+            image_path = os.path.join(folder_path, filename)
+            image = Image.open(image_path).convert("RGB")
+            draw = ImageDraw.Draw(image)
+
+            # Font settings (size, color, etc.)
+            # Dynamic font size based on image size
+            font_size = int(min(image.size) / 20)
+            font = ImageFont.truetype("Rubik-Regular.ttf", font_size)
+
+            # Calculate text width and approximate height
+            text_width = draw.textlength(watermark_text, font=font)
+            text_height = font_size  # Approximate height based on font size
+            x = image.width - text_width - 10  # 10 pixels from the right edge
+            y = image.height - text_height - 10  # 10 pixels from the bottom edge
+
+            # text color based on the avg brightness of the area where the text will be placed
+            brightnesses_list = []
+            for x_temp in range(int(image.width - text_width), int(image.width)):
+                for y_temp in range(int(image.height - text_height), int(image.height)):
+                    R, G, B = image.getpixel((x_temp, y_temp))
+                    brightness = (0.2126 * R) + (0.7152 * G) + (0.0722 * B)
+                    brightnesses_list.append(brightness)
+
+            avg_brightness = sum(brightnesses_list) / len(brightnesses_list)
+            text_color = (0, 0, 0) if avg_brightness > 128 else (255, 255, 255)
+
+            # Add text to image
+            draw.text((x, y), watermark_text, font=font, fill=text_color)
+
+            # Save the watermarked image
+            output_path = os.path.join(folder_path, filename)
+            image.save(output_path)
+
+    print("Watermark added to images successfully!")
+
+
 def main():
     subject = input("Please enter a subject for the video: ")
     final_videos = search_for_videos(subject)
@@ -118,6 +170,8 @@ def main():
     download_scene_frames(video_path, folder_path, scene_list)
     print("---------------------------------")
     detect_text_with_easyocr(folder_path)
+    print("---------------------------------")
+    add_watermark_to_images(folder_path)
 
 
 if __name__ == "__main__":
