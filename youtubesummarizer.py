@@ -12,6 +12,8 @@ import easyocr
 
 from PIL import Image, ImageDraw, ImageFont
 
+import re
+
 
 def search_for_videos(subject):
 
@@ -71,13 +73,13 @@ def parse_time(time_str):
     return total_seconds
 
 
-def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1, images_num_from_scene=2):
+def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1, images_num_from_scene=3):
     print("Downloading key scene frames...")
 
     video = VideoFileClip(video_path)
 
     if scene_list is None or len(scene_list) == 0:
-        print("No scenes detected - downloading the first frame of the video...")
+        print("No scenes detected - downloading the middle frame of the video...")
         frame = video.get_frame(video.duration / 2)
         imageio.imwrite(f"{folder_path}/scene_1_frame_1.jpg", frame)
     else:
@@ -110,10 +112,13 @@ def detect_text_with_easyocr(folder_path):
                 for detection in result:
                     text = detection[1]
                     text_list.append(text)
-    print(text_list)
+    print("Text detected successfully!")
+    return text_list
 
 
 def add_watermark_to_images(folder_path, watermark_text="Omer Bengal"):
+
+    images_paths = []
 
     print("Adding watermark to images in: ", folder_path)
 
@@ -151,9 +156,33 @@ def add_watermark_to_images(folder_path, watermark_text="Omer Bengal"):
 
             # Save the watermarked image
             output_path = os.path.join(folder_path, filename)
+            images_paths.append(output_path)
             image.save(output_path)
 
     print("Watermark added to images successfully!")
+    return images_paths
+
+
+def extract_scene_and_frame(filename):
+    # Regular expression to find the pattern `scene_NUMBER_frame_NUMBER`
+    match = re.search(r'scene_(\d+)_frame_(\d+)', filename)
+    if match:
+        # Return the scene and frame numbers as a tuple of integers
+        return int(match.group(1)), int(match.group(2))
+    return 0, 0  # Default return if no match is found
+
+
+def create_gif_from_images(subject, images_paths, folder_path):
+    print("Creating GIF from images...")
+    images = []
+    for i, image_path in enumerate(images_paths):
+        images.append(imageio.imread(image_path))
+
+    gif_output_path = os.path.join(folder_path, (subject + " - summary.gif"))
+    # determine the fps based on the number of images and the need for the gif to be max 10 sec
+    fps_based_on_images_num_and_10_sec_gif = 3 if len(images) / 3 < 10 else int(len(images) / 10)  # nopep8
+    imageio.mimsave(gif_output_path, images, format='GIF', fps=fps_based_on_images_num_and_10_sec_gif)  # nopep8
+    print("GIF created successfully!")
 
 
 def main():
@@ -169,9 +198,14 @@ def main():
     print("---------------------------------")
     download_scene_frames(video_path, folder_path, scene_list)
     print("---------------------------------")
-    detect_text_with_easyocr(folder_path)
+    text_list = detect_text_with_easyocr(folder_path)
+    print('concatination of detected texts: ', ''.join(text_list))
     print("---------------------------------")
-    add_watermark_to_images(folder_path)
+    images_paths = add_watermark_to_images(folder_path)
+    images_paths_sorted = sorted(images_paths, key=extract_scene_and_frame)
+    print("---------------------------------")
+    create_gif_from_images(subject, images_paths_sorted, folder_path)
+    print("---------------------------------")
 
 
 if __name__ == "__main__":
