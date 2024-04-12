@@ -59,11 +59,6 @@ def download_video(video, folder_path):
 def scene_detection(video_path):
     print("Detecting scenes...")
     scene_list = detect(video_path, ContentDetector())
-    if scene_list is None:
-        # No scenes detected - which means the entire video is one scene. Take it.
-        scene_list = [("00:00:00.000 [frame=0, fps=30.000]", "01:00:00.000 [frame=500, fps=30.000]")]  # nopep8
-    else:
-        print("Scenes detected: ", scene_list)
     print("Scenes detected successfully!")
     return scene_list
 
@@ -81,19 +76,24 @@ def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=
 
     video = VideoFileClip(video_path)
 
-    for i, scene in enumerate(scene_list):
-        # Parse the start and end times of the scene
-        start_time = parse_time(str(scene[0]))
-        end_time = parse_time(str(scene[1]))
-        scene_length = end_time - start_time
+    if scene_list is None or len(scene_list) == 0:
+        print("No scenes detected - downloading the first frame of the video...")
+        frame = video.get_frame(video.duration / 2)
+        imageio.imwrite(f"{folder_path}/scene_1_frame_1.jpg", frame)
+    else:
+        for i, scene in enumerate(scene_list):
+            # Parse the start and end times of the scene
+            start_time = parse_time(str(scene[0]))
+            end_time = parse_time(str(scene[1]))
+            scene_length = end_time - start_time
 
-        if scene_length < min_scene_length:
-            continue
+            if scene_length < min_scene_length:
+                continue
 
-        for j in range(images_num_from_scene):
-            time = start_time + (scene_length / (images_num_from_scene + 1)) * (j + 1)  # nopep8
-            frame = video.get_frame(time)
-            imageio.imwrite(f"{folder_path}/scene_{i + 1}_frame_{j + 1}.jpg", frame)  # nopep8
+            for j in range(images_num_from_scene):
+                time = start_time + (scene_length / (images_num_from_scene + 1)) * (j + 1)  # nopep8
+                frame = video.get_frame(time)
+                imageio.imwrite(f"{folder_path}/scene_{i + 1}_frame_{j + 1}.jpg", frame)  # nopep8
 
     print("Key scene frames downloaded successfully!")
 
