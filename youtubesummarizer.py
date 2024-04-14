@@ -14,6 +14,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 import re
 
+import tkinter as tk
+
 
 def search_for_videos(subject):
 
@@ -31,7 +33,7 @@ def search_for_videos(subject):
             video for video in search.results if video.length / 60 < 10]
         if len(final_videos) == 0:
             print("No videos that are shorte than 10 minutes found. Exiting...")
-            exit()
+            exit(0)
 
     # Sort list of videos by views in descending order
     # final_videos.sort(key=lambda x: x.views, reverse=True)
@@ -73,8 +75,8 @@ def parse_time(time_str):
     return total_seconds
 
 
-def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1, images_num_from_scene=3):
-    print("Downloading key scene frames...")
+def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1.25, images_num_from_scene=2):
+    print("Downloading " + str(len(scene_list)) + " key scene frames...")
 
     video = VideoFileClip(video_path)
 
@@ -183,6 +185,57 @@ def create_gif_from_images(subject, images_paths, folder_path):
     fps_based_on_images_num_and_10_sec_gif = 3 if len(images) / 3 < 10 else int(len(images) / 10)  # nopep8
     imageio.mimsave(gif_output_path, images, format='GIF', fps=fps_based_on_images_num_and_10_sec_gif)  # nopep8
     print("GIF created successfully!")
+    return gif_output_path
+
+
+def animation(photoimage_objects, gif_label, frames, current_frame=0):
+    global loop
+    image = photoimage_objects[current_frame]
+
+    gif_label.configure(image=image)
+    current_frame = current_frame + 1
+
+    if current_frame == frames:
+        current_frame = 0
+
+    # the video should be 10 sec max
+    fps_based_on_images_num_and_10_sec_gif = 3 if frames / 3 < 10 else int(frames / 10)  # nopep8
+
+    # loop = tk_root.after(50, lambda: animation(photoimage_objects, gif_label, frames, current_frame))  # nopep8
+    loop = tk_root.after(int(1000 / fps_based_on_images_num_and_10_sec_gif), lambda: animation(photoimage_objects, gif_label, frames, current_frame))  # nopep8
+
+
+# def stop_animation():
+#     tk_root.after_cancel(loop)
+
+
+def display_gif_with_gui(gif_output_path):
+    print("Displaying GIF...")
+    global tk_root
+    tk_root = tk.Tk()  # Create a GUI window object using Tkinter
+    # os.system(f"start {gif_output_path}")
+    tk_root.title("Displaing Gif")
+    gif_info = Image.open(gif_output_path)
+    frames = gif_info.n_frames  # number of frames
+    photoimage_objects = []
+    for i in range(frames):
+        obj = tk.PhotoImage(file=gif_output_path, format=f"gif -index {i}")
+        photoimage_objects.append(obj)
+        print(f"{(i / frames) * 100:.2f}%")  # print precentage out of 100
+    gif_label = tk.Label(tk_root, image="")
+    gif_label.pack()
+
+    animation(photoimage_objects, gif_label, frames, current_frame=0)
+
+    # start = tk.Button(tk_root, text="Start", command=lambda: )  # nopep8
+    # start.pack()
+
+    # stop = tk.Button(tk_root, text="Stop", command=stop_animation)
+    # stop.pack()
+
+    tk_root.mainloop()
+
+    print("GIF displayed successfully!")
 
 
 def main():
@@ -198,14 +251,15 @@ def main():
     print("---------------------------------")
     download_scene_frames(video_path, folder_path, scene_list)
     print("---------------------------------")
-    text_list = detect_text_with_easyocr(folder_path)
-    print('concatination of detected texts: ', ''.join(text_list))
+    # text_list = detect_text_with_easyocr(folder_path)
+    # print('concatination of detected texts: ', ''.join(text_list))
     print("---------------------------------")
     images_paths = add_watermark_to_images(folder_path)
     images_paths_sorted = sorted(images_paths, key=extract_scene_and_frame)
     print("---------------------------------")
-    create_gif_from_images(subject, images_paths_sorted, folder_path)
+    gif_output_path = create_gif_from_images(subject, images_paths_sorted, folder_path)  # nopep8
     print("---------------------------------")
+    display_gif_with_gui(gif_output_path)
 
 
 if __name__ == "__main__":
