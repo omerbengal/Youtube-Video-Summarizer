@@ -10,7 +10,7 @@ import time
 
 import easyocr
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 import re
 
@@ -62,7 +62,7 @@ def download_video(video, folder_path):
 
 def scene_detection(video_path):
     print("Detecting scenes...")
-    scene_list = detect(video_path, ContentDetector())
+    scene_list = detect(video_path, ContentDetector(threshold=45))
     print("Scenes detected successfully!")
     return scene_list
 
@@ -75,7 +75,7 @@ def parse_time(time_str):
     return total_seconds
 
 
-def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1.25, images_num_from_scene=2):
+def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1, images_num_from_scene=3):
     print("Downloading " + str(len(scene_list)) + " key scene frames...")
 
     video = VideoFileClip(video_path)
@@ -217,11 +217,14 @@ def display_gif_with_gui(gif_output_path):
     tk_root.title("Displaing Gif")
     gif_info = Image.open(gif_output_path)
     frames = gif_info.n_frames  # number of frames
+
     photoimage_objects = []
     for i in range(frames):
-        obj = tk.PhotoImage(file=gif_output_path, format=f"gif -index {i}")
+        gif_info.seek(i)
+        obj = ImageTk.PhotoImage(gif_info)
+        # obj = ImageTk.PhotoImage(file=gif_output_path, format=f"gif -index {i}")  # nopep8
         photoimage_objects.append(obj)
-        print(f"{(i / frames) * 100:.2f}%")  # print precentage out of 100
+
     gif_label = tk.Label(tk_root, image="")
     gif_label.pack()
 
@@ -235,7 +238,7 @@ def display_gif_with_gui(gif_output_path):
 
     tk_root.mainloop()
 
-    print("GIF displayed successfully!")
+    print("GIF displayed successfully! Have a good day :)")
 
 
 def main():
