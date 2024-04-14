@@ -18,7 +18,7 @@ import tkinter as tk
 
 
 def search_for_videos(subject):
-    print("Fetching videos about ", subject, " from YouTube...")
+    print("Fetching videos about \"", subject, "\" from YouTube...")
     search = Search(subject)
     final_videos = [video for video in search.results if video.length / 60 < 10]  # nopep8
 
@@ -38,12 +38,12 @@ def create_folder_based_on_current_time(subject):
     current_time = time.strftime("%Y%m%d-%H%M%S")
     folder_name = f"video summary - {current_time} - {subject}"  # nopep8
     os.mkdir(folder_name)
-    print("Summary folder: ", folder_name, "created successfully!")
+    print("Summary folder: \"", folder_name, "\"created successfully!")
     return folder_name
 
 
 def download_video(video, folder_path):
-    print("Top video: " + video.title)
+    print("Top video's title: \"" + video.title + "\"")
     print("URL: " + video.watch_url)
     print("Downloading top video...")
     yt = YouTube(video.watch_url)
@@ -95,24 +95,24 @@ def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=
 
 
 def detect_text_with_easyocr(folder_path):
-    print("Detecting text with easyocr in:", folder_path)
+    print("Detecting text with easyocr in all images in the folder: \"" + folder_path + "\"")  # nopep8
     reader = easyocr.Reader(['en'])
     text_list = []
-    for file in os.listdir(folder_path):
-        if file.lower().endswith(('.jpg', '.png', 'jpeg')):
-            file_path = os.path.join(folder_path, file)
-            result = reader.readtext(file_path)
-            if len(result) > 0:
-                for detection in result:
-                    text = detection[1]
-                    text_list.append(text)
+    files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.png', 'jpeg'))]  # nopep8
+    for filename in files:
+        file_path = os.path.join(folder_path, filename)
+        result = reader.readtext(file_path)
+        if len(result) > 0:
+            for detection in result:
+                text = detection[1]
+                text_list.append(text)
     print("Text detected successfully!")
     return text_list
 
 
 def add_watermark_to_images(folder_path, watermark_text="Omer Bengal"):
 
-    print("Adding watermark to images in: ", folder_path)
+    print("Adding watermark to images in folder: \"" + folder_path + "\"")
     images_paths = []
     files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.png', 'jpeg'))]  # nopep8
 
