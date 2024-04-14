@@ -18,25 +18,17 @@ import tkinter as tk
 
 
 def search_for_videos(subject):
-
-    print("Featching videos about ", subject, " from youtube...")
+    print("Fetching videos about ", subject, " from YouTube...")
     search = Search(subject)
-
-    final_videos = [
-        video for video in search.results if video.length / 60 < 10]
+    final_videos = [video for video in search.results if video.length / 60 < 10]  # nopep8
 
     if len(final_videos) == 0:
-        print("No videos that are shorte than 10 minutes found. Fetching more videos...")
-        search.results
-        search.get_next_results()
-        final_videos = [
-            video for video in search.results if video.length / 60 < 10]
+        print("No videos that are shorter than 10 minutes found. Fetching more videos...")
+
         if len(final_videos) == 0:
-            print("No videos that are shorte than 10 minutes found. Exiting...")
+            print("No videos that are shorter than 10 minutes found. Exiting...")
             exit(0)
 
-    # Sort list of videos by views in descending order
-    # final_videos.sort(key=lambda x: x.views, reverse=True)
     print("Videos fetched successfully!")
     return final_videos
 
@@ -120,46 +112,46 @@ def detect_text_with_easyocr(folder_path):
 
 def add_watermark_to_images(folder_path, watermark_text="Omer Bengal"):
 
-    images_paths = []
-
     print("Adding watermark to images in: ", folder_path)
+    images_paths = []
+    files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.png', 'jpeg'))]  # nopep8
 
     # Loop through all files in the input folder
-    for filename in os.listdir(folder_path):
-        if filename.lower().endswith(('.jpg', '.png', 'jpeg')):
-            image_path = os.path.join(folder_path, filename)
-            image = Image.open(image_path).convert("RGB")
-            draw = ImageDraw.Draw(image)
+    for i, filename in enumerate(files):
+        image_path = os.path.join(folder_path, filename)
+        image = Image.open(image_path).convert("RGB")
+        draw = ImageDraw.Draw(image)
 
-            # Font settings (size, color, etc.)
-            # Dynamic font size based on image size
-            font_size = int(min(image.size) / 20)
-            font = ImageFont.truetype("Rubik-Regular.ttf", font_size)
+        # Font settings (size, color, etc.)
 
-            # Calculate text width and approximate height
-            text_width = draw.textlength(watermark_text, font=font)
-            text_height = font_size  # Approximate height based on font size
-            x = image.width - text_width - 10  # 10 pixels from the right edge
-            y = image.height - text_height - 10  # 10 pixels from the bottom edge
+        # Dynamic font size based on image size
+        font_size = int(min(image.size) / 20)
+        font = ImageFont.truetype("Rubik-Regular.ttf", font_size)
 
-            # text color based on the avg brightness of the area where the text will be placed
-            brightnesses_list = []
-            for x_temp in range(int(image.width - text_width), int(image.width)):
-                for y_temp in range(int(image.height - text_height), int(image.height)):
-                    R, G, B = image.getpixel((x_temp, y_temp))
-                    brightness = (0.2126 * R) + (0.7152 * G) + (0.0722 * B)
-                    brightnesses_list.append(brightness)
+        # Calculate text width and approximate height
+        text_width = draw.textlength(watermark_text, font=font)
+        text_height = font_size  # Approximate height based on font size
+        x = image.width - text_width - 10  # 10 pixels from the right edge
+        y = image.height - text_height - 10  # 10 pixels from the bottom edge
 
-            avg_brightness = sum(brightnesses_list) / len(brightnesses_list)
-            text_color = (0, 0, 0) if avg_brightness > 128 else (255, 255, 255)
+        # text color based on the avg brightness of the area where the text will be placed
+        brightnesses_list = []
+        for x_temp in range(int(image.width - text_width), int(image.width)):
+            for y_temp in range(int(image.height - text_height), int(image.height)):
+                R, G, B = image.getpixel((x_temp, y_temp))
+                brightness = (0.2126 * R) + (0.7152 * G) + (0.0722 * B)
+                brightnesses_list.append(brightness)
 
-            # Add text to image
-            draw.text((x, y), watermark_text, font=font, fill=text_color)
+        avg_brightness = sum(brightnesses_list) / len(brightnesses_list)
+        text_color = (0, 0, 0) if avg_brightness > 128 else (255, 255, 255)
 
-            # Save the watermarked image
-            output_path = os.path.join(folder_path, filename)
-            images_paths.append(output_path)
-            image.save(output_path)
+        # Add text to image
+        draw.text((x, y), watermark_text, font=font, fill=text_color)
+
+        # Save the watermarked image
+        output_path = os.path.join(folder_path, filename)
+        images_paths.append(output_path)
+        image.save(output_path)
 
     print("Watermark added to images successfully!")
     return images_paths
@@ -201,19 +193,13 @@ def animation(photoimage_objects, gif_label, frames, current_frame=0):
     # the video should be 10 sec max
     fps_based_on_images_num_and_10_sec_gif = 3 if frames / 3 < 10 else int(frames / 10)  # nopep8
 
-    # loop = tk_root.after(50, lambda: animation(photoimage_objects, gif_label, frames, current_frame))  # nopep8
     loop = tk_root.after(int(1000 / fps_based_on_images_num_and_10_sec_gif), lambda: animation(photoimage_objects, gif_label, frames, current_frame))  # nopep8
-
-
-# def stop_animation():
-#     tk_root.after_cancel(loop)
 
 
 def display_gif_with_gui(gif_output_path):
     print("Displaying GIF...")
     global tk_root
     tk_root = tk.Tk()  # Create a GUI window object using Tkinter
-    # os.system(f"start {gif_output_path}")
     tk_root.title("Displaing Gif")
     gif_info = Image.open(gif_output_path)
     frames = gif_info.n_frames  # number of frames
@@ -222,19 +208,12 @@ def display_gif_with_gui(gif_output_path):
     for i in range(frames):
         gif_info.seek(i)
         obj = ImageTk.PhotoImage(gif_info)
-        # obj = ImageTk.PhotoImage(file=gif_output_path, format=f"gif -index {i}")  # nopep8
         photoimage_objects.append(obj)
 
     gif_label = tk.Label(tk_root, image="")
     gif_label.pack()
 
     animation(photoimage_objects, gif_label, frames, current_frame=0)
-
-    # start = tk.Button(tk_root, text="Start", command=lambda: )  # nopep8
-    # start.pack()
-
-    # stop = tk.Button(tk_root, text="Stop", command=stop_animation)
-    # stop.pack()
 
     tk_root.mainloop()
 
@@ -254,8 +233,8 @@ def main():
     print("---------------------------------")
     download_scene_frames(video_path, folder_path, scene_list)
     print("---------------------------------")
-    # text_list = detect_text_with_easyocr(folder_path)
-    # print('concatination of detected texts: ', ''.join(text_list))
+    text_list = detect_text_with_easyocr(folder_path)
+    print('concatination of detected texts: ', ''.join(text_list))
     print("---------------------------------")
     images_paths = add_watermark_to_images(folder_path)
     images_paths_sorted = sorted(images_paths, key=extract_scene_and_frame)
