@@ -18,7 +18,7 @@ import tkinter as tk
 
 
 def search_for_videos(subject):
-    print("Fetching videos about \"", subject, "\" from YouTube...")
+    print("Fetching videos about \"" + subject + "\" from YouTube...")
     search = Search(subject)
     final_videos = [video for video in search.results if video.length / 60 < 10]  # nopep8
 
@@ -38,7 +38,7 @@ def create_folder_based_on_current_time(subject):
     current_time = time.strftime("%Y%m%d-%H%M%S")
     folder_name = f"video summary - {current_time} - {subject}"  # nopep8
     os.mkdir(folder_name)
-    print("Summary folder: \"", folder_name, "\"created successfully!")
+    print("Summary folder: \"" + folder_name + "\" created successfully!")
     return folder_name
 
 
@@ -234,7 +234,7 @@ def main():
     download_scene_frames(video_path, folder_path, scene_list)
     print("---------------------------------")
     text_list = detect_text_with_easyocr(folder_path)
-    print('concatination of detected texts: ', ''.join(text_list))
+    print("Concatination of detected texts in all images: \"" + "".join(text_list) + "\"")  # nopep8
     print("---------------------------------")
     images_paths = add_watermark_to_images(folder_path)
     images_paths_sorted = sorted(images_paths, key=extract_scene_and_frame)
@@ -242,6 +242,7 @@ def main():
     gif_output_path = create_gif_from_images(subject, images_paths_sorted, folder_path)  # nopep8
     print("---------------------------------")
     display_gif_with_gui(gif_output_path)
+    print("---------------------------------")
 
 
 if __name__ == "__main__":
