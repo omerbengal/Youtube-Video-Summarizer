@@ -68,7 +68,7 @@ def parse_time(time_str):
 
 
 def download_scene_frames(video_path, folder_path, scene_list, min_scene_length=1, images_num_from_scene=3):
-    print("Downloading " + str(len(scene_list)) + " key scene frames...")
+    print("Downloading " + str(images_num_from_scene) + " key frames from each of the " + str(len(scene_list)) + " scenes detected")
 
     video = VideoFileClip(video_path)
 
